@@ -1,0 +1,54 @@
+import sys
+import random
+import time
+
+class RAMutex(DistProcess):
+	def setup(s, n, id):
+		defer = []
+		executing = False
+		requested = False
+		reqc = 0
+		counter = 0
+
+	def cs(task):
+		counter = 0
+		--request
+		output("P%s requesting CS" % id)
+		reqc = logical_clock()
+		send(Request(reqc),s)
+		requested = True
+		await(counter == len(s))
+
+		# critical section
+		executing = True
+		task()
+
+		--release
+		executing = False
+		output("P%s exiting CS" % id)
+		requested = False
+		
+		send(Reply(logical_clock(), self), defer)
+		defer = []
+		
+	def main():
+		def anounce():
+			output("In cs!")
+		for i in range(n):
+			cs(anounce)
+		send(Exit(self), s) 
+		await(all(received(Exit(c)) for c in s))
+
+	def OnRequest(req):
+		if (not requested) and (not executing) or (requested and(req, _source) < (reqc, self)):
+			send(Reply(logical_clock(),self), _source)
+		else:
+			defer.append(_source)
+	
+	def OnReply(c, p):
+		if (c,p) > (reqc, self):
+			counter += 1
+			
+	# def OnExit():		
+	# 	s = s - {_source}
+
