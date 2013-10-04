@@ -1,0 +1,65 @@
+import sys
+import random
+
+class RAToken(DistProcess):
+	def setup(ps, n, id):
+		process_list = ps
+		requests = dict((p,0) for p in process_list)
+		token = dict((p,0) for p in process_list)
+		token_present = False
+		token_held = False
+		time_stamp = 0
+		if id == 1:
+			token_present = True
+		countOfProcess = len(ps)
+		is_here = token_present
+	
+	def cs(task):
+		output("P%s requesting CS" % id)
+		time_stamp += 1
+		if token_present == False and is_here == False:
+			send(Request(time_stamp), process_list)
+			requests[self] = time_stamp
+			await(token_present == True)
+			is_here = True
+		# output("Process %s)" % self + " got the token")
+		token_held = True
+		task()
+		output("P%s exiting CS" % id)
+		release()
+	
+	def release():
+		token[self] = time_stamp
+		token_held = False
+		for i in process_list:
+				if requests[i] > token[i]:
+					# output("Process %s)" % self + " sends token to: " + str(i))
+					token_present = False
+					send(Token(token), i)
+					is_here = False
+					break
+		
+	def OnRequest(time_stamp):
+		requests[_source] = max(requests[_source], time_stamp)
+		if token_present == True and token_held == False:
+			release()
+	
+	def OnToken(temp_token):
+		token_present = True
+		token = temp_token
+		token[self] = time_stamp
+
+	def OnExit():
+		# output("Process %s)" % self + " terminates")
+		countOfProcess -= 1
+	
+	def main():
+		def anounce():
+			output("P%s entering CS" % id)
+		while(n > 0):
+			cs(anounce)
+			n -= 1
+		send(Exit(self), ps)
+		if countOfProcess == 0:
+			token_present = False
+		await(token_present == False or countOfProcess == 0)
