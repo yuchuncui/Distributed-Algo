@@ -1,0 +1,258 @@
+import ramutex_clear
+import ramutex_efficient
+import ramutex_alter
+import ratoken_clear
+import ratoken_efficient
+import ratoken_alter
+import random
+import time
+
+def main():
+	nprocs = int(sys.argv[1]) if len(sys.argv) > 1 else 5
+	nreqs = int(sys.argv[2]) if len(sys.argv) > 2 else 20
+	ntimes = int(sys.argv[3]) if len(sys.argv) > 3 else 100
+	nsteps = int(sys.argv[4]) if len(sys.argv) > 4 else 3
+
+	totalTime = [0.0] * 6
+	avrTime = [0.0] * 6
+	
+	print("\n========================================================================")
+	print("Running RA's timestamp-based algorithm(clear version)")
+	print("------------------------------------------------------------------------")
+	tempNReqs = nreqs
+	totaltime = 0.0
+	for i in range(ntimes):
+		start = time.time()
+		use_channel("tcp")
+		ps = createprocs(ramutex_clear.RAMutex, nprocs)
+		
+		preqs = [0] * nprocs
+		count = tempNReqs
+		while (count > 0):
+			p = random.randint(0, nprocs - 1)
+			preqs[p] = preqs[p] + 1
+			count -= 1
+			
+		pid = 0
+		for p in ps:
+			setupprocs({p}, [ps-{p}, preqs[pid], pid + 1])
+			pid += 1
+		startprocs(ps)
+		
+		for p in ps:
+			p.join()
+		
+		totaltime += time.time() - start		
+		tempNReqs += nsteps
+		print("------------ Round %s finished ------------" % (i+1))
+	
+	totalTime[0] = totaltime
+	avrTime[0] = totaltime / ntimes
+	print("RA's timestamp-based(clear version) is done, averagely took %.3f seconds." % avrTime[0])
+	
+	time.sleep(2)
+	print("\n========================================================================")
+	print("Running RA's timestamp-based algorithm(efficient version).")
+	print("------------------------------------------------------------------------")
+	tempNReqs = nreqs
+	totaltime = 0.0
+	for i in range(ntimes):
+		start = time.time()
+		use_channel("tcp")
+		ps = createprocs(ramutex_efficient.RAMutex, nprocs)
+		
+		preqs = [0] * nprocs
+		count = tempNReqs
+		while (count > 0):
+			p = random.randint(0, nprocs - 1)
+			preqs[p] = preqs[p] + 1
+			count -= 1
+			
+		pid = 0
+		for p in ps:
+			setupprocs({p}, [ps-{p}, preqs[pid], pid + 1])
+			pid += 1
+		startprocs(ps)
+		
+		for p in ps:
+			p.join()
+
+		totaltime += time.time() - start
+		tempNReqs += nsteps	
+		print("------------ Round %s finished ------------" % (i+1))
+	
+	totalTime[1] = totaltime
+	avrTime[1] = totaltime / ntimes
+	print("RA's timestamp-based(efficient version) is done, averagely took %.3f seconds." % avrTime[1])
+
+	time.sleep(2)
+	print("\n========================================================================")
+	print("Running RA's timestamp-based algorithm(alternative version).")
+	print("------------------------------------------------------------------------")
+	tempNReqs = nreqs
+	totaltime = 0.0
+	for i in range(ntimes):
+		start = time.time()
+		use_channel("tcp")
+		ps = createprocs(ramutex_alter.RAMutex, nprocs)
+		
+		preqs = [0] * nprocs
+		count = tempNReqs
+		while (count > 0):
+			p = random.randint(0, nprocs - 1)
+			preqs[p] = preqs[p] + 1
+			count -= 1
+			
+		pid = 0
+		for p in ps:
+			setupprocs({p}, [ps-{p}, preqs[pid], pid + 1])
+			pid += 1
+		startprocs(ps)
+		
+		for p in ps:
+			p.join()
+
+		totaltime += time.time() - start
+		tempNReqs += nsteps	
+		print("------------ Round %s finished ------------" % (i+1))
+	
+	totalTime[2] = totaltime
+	avrTime[2] = totaltime / ntimes
+	print("RA's timestamp-based(alternative version) is done, averagely took %.3f seconds." % avrTime[2])
+
+	time.sleep(2)
+	print("\n========================================================================")
+	print("Running RA's token-based algorithm(clear version)")
+	print("------------------------------------------------------------------------")
+	tempNReqs = nreqs
+	totaltime = 0.0
+	for i in range(ntimes):
+		start = time.time()
+		use_channel("tcp")
+		ps = createprocs(ratoken_clear.RAToken, nprocs)
+		
+		preqs = [0] * nprocs
+		count = tempNReqs
+		while (count > 0):
+			p = random.randint(0, nprocs - 1)
+			preqs[p] = preqs[p] + 1
+			count -= 1
+		
+		pid = 0
+		plist = list(ps)
+		
+		for pid, p in enumerate(list(ps)):
+			setupprocs({p}, [(plist[pid + 1 : ] + plist[0 : pid]), preqs[pid], pid + 1])
+		startprocs(ps)
+		
+		for p in ps:
+			p.join()
+		
+		totaltime += time.time() - start
+		tempNReqs += nsteps	
+		print("------------ Round %s finished ------------" % (i+1))
+	
+	totalTime[3] = totaltime
+	avrTime[3] = totaltime / ntimes
+	print("RA's token-based(clear version) is done, averagely took %.3f seconds." % avrTime[3])
+
+	time.sleep(2)
+	print("\n========================================================================")
+	print("Running RA's token-based algorithm(efficient version)")
+	print("------------------------------------------------------------------------")
+	tempNReqs = nreqs
+	totaltime = 0.0
+	for i in range(ntimes):
+		start = time.time()
+		use_channel("tcp")
+		ps = createprocs(ratoken_efficient.RAToken, nprocs)
+		
+		preqs = [0] * nprocs
+		count = tempNReqs
+		while (count > 0):
+			p = random.randint(0, nprocs - 1)
+			preqs[p] = preqs[p] + 1
+			count -= 1
+		
+		pid = 0
+		plist = list(ps)
+		
+		for pid, p in enumerate(list(ps)):
+			setupprocs({p}, [(plist[pid + 1 : ] + plist[0 : pid]), preqs[pid], pid + 1])
+		startprocs(ps)
+		
+		for p in ps:
+			p.join()
+		
+		totaltime += time.time() - start
+		tempNReqs += nsteps	
+		print("------------ Round %s finished ------------" % (i+1))
+	
+	totalTime[4] = totaltime
+	avrTime[4] = totaltime / ntimes
+	print("RA's token-based(efficient version) is done, averagely took %.3f seconds." % avrTime[4])
+
+	time.sleep(2)
+	print("\n========================================================================")
+	print("Running RA's token-based algorithm(alternative version)")
+	print("------------------------------------------------------------------------")
+	tempNReqs = nreqs
+	totaltime = 0.0
+	for i in range(ntimes):
+		start = time.time()
+		use_channel("tcp")
+		ps = createprocs(ratoken_alter.RAToken, nprocs)
+		
+		preqs = [0] * nprocs
+		count = tempNReqs
+		while (count > 0):
+			p = random.randint(0, nprocs - 1)
+			preqs[p] = preqs[p] + 1
+			count -= 1
+		
+		pid = 0
+		plist = list(ps)
+		
+		for pid, p in enumerate(list(ps)):
+			setupprocs({p}, [(plist[pid + 1 : ] + plist[0 : pid]), preqs[pid], pid + 1])
+		startprocs(ps)
+		
+		for p in ps:
+			p.join()
+		
+		totaltime += time.time() - start
+		tempNReqs += nsteps	
+		print("------------ Round %s finished ------------" % (i+1))
+	
+	totalTime[5] = totaltime
+	avrTime[5] = totaltime / ntimes
+	print("RA's token-based(alternative version) is done, averagely took %.3f seconds." % avrTime[5])
+
+	print("========================================================================\n")
+
+	string = """
+	===============================================
+	Algo's Type | Version | Total Time | AvrTime/Rd
+	===============================================
+	  Timestamp |  clear  |  %f  |   %.3f
+  -----------------------------------------------
+    Timestamp |  effic  |  %f  |   %.3f
+  -----------------------------------------------
+	  Timestamp |  alter  |  %f  |   %.3f
+  -----------------------------------------------
+	    Token   |  clear  |  %f  |   %.3f
+	-----------------------------------------------
+	    Token   |  effic  |  %f  |   %.3f
+	-----------------------------------------------
+	    Token   |  alter  |  %f  |   %.3f
+	===============================================
+	"""
+	f = open("./stats.txt",'w')
+	f.write("Input Parameters: \n")
+	f.write("Number of Process: " + str(nprocs) + "\n")
+	f.write("Numebr of Request: " + str(nreqs) + "\n")
+	f.write("Number of Running Times: " + str(ntimes) + "\n")
+	f.write("Number of Incrementing Step: " + str(nsteps) + "\n")
+	f.write(string % (totalTime[0], avrTime[0], totalTime[1], avrTime[1], totalTime[2], avrTime[2], totalTime[3], avrTime[3], totalTime[4], avrTime[4], totalTime[5], avrTime[5]))
+	f.close()
+	print("Stats table has been output to stats.txt in the same folder.\n")
