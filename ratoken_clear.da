@@ -1,0 +1,79 @@
+import sys
+import random
+
+class RAToken(DistProcess):
+	def setup(ps, n, id):
+		process_list = ps
+		# requests = dict((p,0) for p in process_list)
+		# token = dict((p,0) for p in process_list)
+		requests = []
+		token = []
+		for i in process_list:
+			requests.append([i,0])
+		for i in process_list:
+			token.append([i,0])
+		token_present = False
+		token_held = False
+		time_stamp = 0
+		if id == 1:
+			token_present = True
+		countOfProcess = len(ps)
+	
+	def cs(task):
+		output("P%s requesting CS" % id)
+		time_stamp += 1
+		if token_present == False:
+			send(Request(time_stamp), process_list)
+			for re in requests:
+				if re[0] == self:
+					re[1] = time_stamp
+			await(token_present == True)
+		# output("Process %s)" % self + " got the token")
+		token_held = True
+		task()
+		output("P%s exiting CS" % id)
+		release()
+	
+	def release():
+		for re in token:
+			if re[0] == self:
+				re[1] = time_stamp
+		token_held = False
+		temp1 = 0
+		temp2 = 0
+		for i in process_list:
+				for re in requests:
+					if re[0] == i:
+						temp1 = re[1]
+				for re in token:
+					if re[0] == i:
+						temp2 = re[1]
+				if temp1 > temp2:
+					# output("Process %s)" % self + " sends token to: " + str(i))
+					token_present = False
+					send(Token(token), i)
+					break
+		
+	def OnRequest(time_stamp):
+		for re in requests:
+			if re[0] == _source:
+				re[1] = max(re[1], time_stamp)
+		if token_present == True and token_held == False:
+			release()
+	
+	def OnToken(temp_token):
+		token_present = True
+		token = temp_token
+		for re in token:
+			if re[0] == self:
+				re[1] = time_stamp
+	
+	def main():
+		def anounce():
+			output("P%s entering CS" % id)
+		while(n > 0):
+			cs(anounce)
+			n -= 1
+		send(Exit(self), ps)
+		await(all(received(Exit(c)) for c in ps))
+
